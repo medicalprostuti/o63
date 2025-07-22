@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>কেমিস্ট্রি ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "ইউরিয়া সার উৎপাদনে কোন অন্তর্বর্তী যৌগ উৎপন্ন হয়?",
+          options: {
+            a: "CO",
+            b: "HCONH₂",
+            c: "NH₃",
+            d: "H₂N - COONH₄",
+          },
+          correct: "d",
+          explanation:
+            "<p>ইউরিয়া সার (রাসায়নিক সংকেত: H₂NCONH₂) শিল্পক্ষেত্রে অ্যামোনিয়া (NH₃) এবং কার্বন ডাই অক্সাইড (CO₂) এর বিক্রিয়ার মাধ্যমে তৈরি করা হয়। এই প্রক্রিয়াটি দুটি প্রধান ধাপে সম্পন্ন হয়:</p> <ol> <li><strong>প্রথম ধাপ: অ্যামোনিয়াম কার্বামেট গঠন</strong><br>উচ্চ চাপ এবং তাপমাত্রায় অ্যামোনিয়া (NH₃) এবং কার্বন ডাই অক্সাইড (CO₂) বিক্রিয়া করে অ্যামোনিয়াম কার্বামেট (H₂NCOONH₄) উৎপন্ন করে। এটি একটি এক্সোথার্মিক (তাপোৎপাদী) বিক্রিয়া।<br><code>2NH₃(g) + CO₂(g) → H₂NCOONH₄(s)</code></li> <li><strong>দ্বিতীয় ধাপ: ইউরিয়া গঠন</strong><br>অ্যামোনিয়াম কার্বামেট পরবর্তীতে তাপের প্রভাবে বিয়োজিত হয়ে ইউরিয়া (H₂NCONH₂) এবং পানি (H₂O) উৎপন্ন করে। এটি একটি এন্ডোথার্মিক (তাপশোষী) বিক্রিয়া।<br><code>H₂NCOONH₄(s) → H₂NCONH₂(s) + H₂O(g)</code></li> </ol> <p>সুতরাং, ইউরিয়া সার উৎপাদনে প্রথম অন্তর্বর্তী যৌগটি হলো অ্যামোনিয়াম কার্বামেট (H₂N - COONH₄)।</p>",
+        },
+        {
+          id: 2,
+          question: "ইউরিয়া প্রস্তুতির প্রধান কাঁচামাল কোনটি?",
+          options: {
+            a: "তরল বায়ু",
+            b: "তরলীকৃত পেট্রোলিয়াম গ্যাস",
+            c: "কার্বোনাইট্রাইল",
+            d: "কার্বামেট",
+          },
+          correct: "b",
+          explanation:
+            "<p>ইউরিয়া (H₂NCONH₂) উৎপাদনের জন্য দুটি প্রধান কাঁচামাল প্রয়োজন: অ্যামোনিয়া (NH₃) এবং কার্বন ডাই অক্সাইড (CO₂)।</p> <ul> <li><strong>অ্যামোনিয়া উৎপাদন:</strong> অ্যামোনিয়া প্রধানত হেবার-বস প্রক্রিয়ায় প্রাকৃতিক গ্যাস (মিথেন, CH₄) বা তরলীকৃত পেট্রোলিয়াম গ্যাস (LPG) থেকে প্রাপ্ত হাইড্রোজেন এবং বাতাস থেকে প্রাপ্ত নাইট্রোজেন ব্যবহার করে তৈরি করা হয়। বাংলাদেশের প্রেক্ষাপটে, ইউরিয়া সার কারখানাগুলিতে অ্যামোনিয়া উৎপাদনের জন্য প্রধানত প্রাকৃতিক গ্যাস ব্যবহৃত হয়।</li> <li><strong>কার্বন ডাই অক্সাইড উৎপাদন:</strong> অ্যামোনিয়া উৎপাদনের সময় কার্বন ডাই অক্সাইড উপজাত হিসেবে উৎপন্ন হয়, যা ইউরিয়া সংশ্লেষণে ব্যবহৃত হয়।</li> </ul> <p>প্রশ্নটিতে ইউরিয়া প্রস্তুতির 'প্রধান কাঁচামাল' কোনটি জানতে চাওয়া হয়েছে। যদিও অ্যামোনিয়া এবং কার্বন ডাই অক্সাইড সরাসরি ইউরিয়া উৎপাদনে ব্যবহৃত হয়, এই কাঁচামালগুলো প্রাকৃতিক গ্যাস বা তরলীকৃত পেট্রোলিয়াম গ্যাস (LPG) থেকে উদ্ভূত। যেহেতু প্রাকৃতিক গ্যাস বা LPG থেকে হাইড্রোজেন এবং কার্বন ডাই অক্সাইড আসে যা অ্যামোনিয়া এবং ইউরিয়া তৈরিতে ব্যবহৃত হয়, তাই এগুলি পরোক্ষভাবে ইউরিয়া প্রস্তুতির প্রধান কাঁচামাল হিসেবে বিবেচিত।</p> <p>প্রদত্ত বিকল্পগুলির মধ্যে, 'তরলীকৃত পেট্রোলিয়াম গ্যাস' (LPG) প্রাকৃতিক গ্যাসের একটি সাধারণ বিকল্প বা উৎস যা থেকে অ্যামোনিয়ার জন্য প্রয়োজনীয় হাইড্রোজেন এবং কার্বন ডাই অক্সাইড পাওয়া যেতে পারে। অন্যান্য বিকল্প যেমন 'তরল বায়ু', 'কার্বোনাইট্রাইল' বা 'কার্বামেট' সরাসরি ইউরিয়া প্রস্তুতির প্রধান কাঁচামাল নয়।</p> <p>যদি প্রশ্নে প্রাকৃতিক গ্যাস একটি বিকল্প হিসেবে থাকত, সেটি আরও সরাসরি উত্তর হতো। তবে, LPG হলো পেট্রোলিয়াম উৎসের একটি জ্বালানি যা অ্যামোনিয়া উৎপাদনে ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 3,
+          question: "ইউরিয়া সার শিল্পের কাঁচামাল কোনটি?",
+          options: {
+            a: "লিগনিন",
+            b: "ফেলম্পার",
+            c: "নাইট্রোজেন",
+            d: "অ্যামোনিয়া",
+          },
+          correct: "d",
+          explanation:
+            "<p>ইউরিয়া (H₂NCONH₂) উৎপাদনের জন্য দুটি প্রধান রাসায়নিক কাঁচামাল প্রয়োজন: অ্যামোনিয়া (NH₃) এবং কার্বন ডাই অক্সাইড (CO₂)।</p> <ul> <li><strong>অ্যামোনিয়া:</strong> এটি ইউরিয়ার অণুতে নাইট্রোজেন সরবরাহ করে এবং এর কাঠামো গঠনে অপরিহার্য। অ্যামোনিয়া সাধারণত প্রাকৃতিক গ্যাস (বা অন্যান্য হাইড্রোকার্বন) থেকে হাইড্রোজেন এবং বাতাস থেকে নাইট্রোজেন ব্যবহার করে হেবার-বস প্রক্রিয়ায় তৈরি করা হয়।</li> <li><strong>কার্বন ডাই অক্সাইড:</strong> এটি অ্যামোনিয়া উৎপাদনের উপজাত হিসেবে পাওয়া যায় এবং ইউরিয়ার কার্বনিল (-CO-) গ্রুপ গঠনে ব্যবহৃত হয়।</li> </ul> <p>অন্যান্য বিকল্পগুলি হলো:</p> <ul> <li>(A) লিগনিন: এটি উদ্ভিদ কোষ প্রাচীরের একটি জটিল পলিমার, সার শিল্পে সরাসরি কাঁচামাল হিসেবে ব্যবহৃত হয় না।</li> <li>(B) ফেলম্পার: এটি একটি খনিজ, সার শিল্পে কাঁচামাল নয়।</li> <li>(C) নাইট্রোজেন: এটি অ্যামোনিয়া উৎপাদনের জন্য একটি কাঁচামাল, কিন্তু সরাসরি ইউরিয়া উৎপাদনের জন্য অ্যামোনিয়া এবং কার্বন ডাই অক্সাইড ব্যবহার করা হয়।</li> </ul> <p>সুতরাং, ইউরিয়া সার শিল্পের সরাসরি কাঁচামালগুলির মধ্যে অ্যামোনিয়া অন্যতম প্রধান।</p>",
+        },
+        {
+          id: 4,
+          question: "ইউরিয়া সারে নাইট্রোজেনের শতকরা পরিমাণ হলো-",
+          options: {
+            a: "৪২%",
+            b: "৪৩%",
+            c: "৪৬%",
+            d: "৪৮%",
+          },
+          correct: "c",
+          explanation:
+            "<p>ইউরিয়া (Urea) হলো একটি রাসায়নিক সার যার রাসায়নিক সংকেত H₂NCONH₂। এটি উচ্চ নাইট্রোজেন ধারণকারী একটি সার এবং কৃষিক্ষেত্রে ব্যাপকভাবে ব্যবহৃত হয়।</p> <p>ইউরিয়াতে নাইট্রোজেনের শতকরা পরিমাণ নির্ণয় করতে এর আণবিক ভর এবং নাইট্রোজেনের পারমাণবিক ভর ব্যবহার করা হয়:</p> <ul> <li>ইউরিয়ার আণবিক ভর (MW of Urea) = (2 × N) + (4 × H) + (1 × C) + (1 × O) = (2 × 14.01) + (4 × 1.01) + (1 × 12.01) + (1 × 16.00) = 28.02 + 4.04 + 12.01 + 16.00 = 60.07 g/mol।</li> <li>ইউরিয়াতে নাইট্রোজেনের মোট ভর = 2 × 14.01 = 28.02 g/mol।</li> <li>নাইট্রোজেনের শতকরা পরিমাণ = (নাইট্রোজেনের মোট ভর / ইউরিয়ার আণবিক ভর) × 100%</li> <li>= (28.02 / 60.07) × 100% ≈ 46.64%।</li> </ul> <p>সুতরাং, ইউরিয়া সারে নাইট্রোজেনের শতকরা পরিমাণ প্রায় ৪৬%।</p>",
+        },
+        {
+          id: 5,
+          question: "কোনটি সার কারখানা?",
+          options: {
+            a: "কেরু এন্ড কোম্পানি",
+            b: "KAFCO",
+            c: "চন্দ্রঘোনা",
+            d: "ইস্টার্ন রিফাইনারি",
+          },
+          correct: "b",
+          explanation:
+            "<p>বাংলাদেশে বিভিন্ন ধরনের শিল্প প্রতিষ্ঠান রয়েছে। প্রশ্নটি নির্দিষ্ট করে সার কারখানা জানতে চেয়েছে।</p> <ul> <li>(A) কেরু এন্ড কোম্পানি: এটি বাংলাদেশের একটি বিখ্যাত চিনি কল এবং স্পিরিট উৎপাদনকারী প্রতিষ্ঠান, যা চুয়াডাঙ্গা জেলায় অবস্থিত।</li> <li>(B) KAFCO (কর্ণফুলী ফার্টিলাইজার কোম্পানি লিমিটেড): এটি চট্টগ্রাম জেলার আনোয়ারায় অবস্থিত একটি বৃহৎ ইউরিয়া সার ও অ্যামোনিয়া উৎপাদনকারী কারখানা। এটি একটি আন্তর্জাতিক যৌথ উদ্যোগের প্রতিষ্ঠান।</li> <li>(C) চন্দ্রঘোনা: এটি রাঙ্গামাটি জেলার একটি স্থান, যেখানে কর্ণফুলী পেপার মিলস লিমিটেড অবস্থিত। এটি একটি কাগজ কল।</li> <li>(D) ইস্টার্ন রিফাইনারি: এটি চট্টগ্রামের একটি তেল শোধনাগার, যা অপরিশোধিত তেল থেকে পেট্রোলিয়াম পণ্য উৎপাদন করে।</li> </ul> <p>সুতরাং, KAFCO হলো একটি সার কারখানা।</p>",
+        },
+        {
+          id: 6,
+          question:
+            "ইউরিয়া সার তৈরিতে প্রাকৃতিক গ্যাস কোন ক্ষেত্রে ব্যবহৃত হয়?",
+          options: {
+            a: "as fuel",
+            b: "NH₃ synthesis",
+            c: "as coolant",
+            d: "none of these",
+          },
+          correct: "b",
+          explanation:
+            "<p>ইউরিয়া সার উৎপাদনে প্রাকৃতিক গ্যাস একটি অত্যন্ত গুরুত্বপূর্ণ কাঁচামাল। এর ব্যবহার শুধুমাত্র জ্বালানি হিসেবে সীমাবদ্ধ নয়।</p> <ul> <li><strong>NH₃ synthesis (অ্যামোনিয়া সংশ্লেষণ):</strong> ইউরিয়া তৈরির জন্য প্রথমে অ্যামোনিয়া (NH₃) উৎপাদন করা হয়। এই অ্যামোনিয়া উৎপাদনের জন্য প্রাকৃতিক গ্যাস (মিথেন, CH₄) থেকে হাইড্রোজেন (H₂) তৈরি করা হয় স্টিম রিফর্মিং প্রক্রিয়ায়।<br><code>CH₄ + H₂O → CO + 3H₂</code><br>এই হাইড্রোজেন পরবর্তীতে বাতাস থেকে প্রাপ্ত নাইট্রোজেনের সাথে বিক্রিয়া করে অ্যামোনিয়া উৎপন্ন করে (হেবার-বস প্রক্রিয়া)। সুতরাং, প্রাকৃতিক গ্যাস সরাসরি অ্যামোনিয়া সংশ্লেষণে ব্যবহৃত হয়।</li> <li><strong>as fuel (জ্বালানি হিসেবে):</strong> প্রাকৃতিক গ্যাস ইউরিয়া কারখানার বিভিন্ন প্রক্রিয়ায় তাপ উৎপন্ন করার জন্য জ্বালানি হিসেবেও ব্যবহৃত হয়, তবে এটি এর প্রধান বা প্রাথমিক ব্যবহার নয়।</li> <li><strong>as coolant (শীতলকারক হিসেবে):</strong> প্রাকৃতিক গ্যাস শীতলকারক হিসেবে ব্যবহৃত হয় না।</li> </ul> <p>সুতরাং, ইউরিয়া সার তৈরিতে প্রাকৃতিক গ্যাস মূলত অ্যামোনিয়া সংশ্লেষণে ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 7,
+          question:
+            "নিচের কোনটি অ্যামোনিয়ার সাথে বিক্রিয়া করে ইউরিয়া উৎপন্ন করে?",
+          options: {
+            a: "H₂O",
+            b: "CO₂",
+            c: "CH₄",
+            d: "C₆H₆",
+          },
+          correct: "b",
+          explanation:
+            "<p>ইউরিয়া (H₂NCONH₂) শিল্পক্ষেত্রে অ্যামোনিয়া (NH₃) এবং কার্বন ডাই অক্সাইড (CO₂) এর বিক্রিয়ার মাধ্যমে তৈরি করা হয়।</p> <p>বিক্রিয়াটি দুটি প্রধান ধাপে সম্পন্ন হয়:</p> <ol> <li><strong>অ্যামোনিয়াম কার্বামেট গঠন:</strong><br><code>2NH₃(g) + CO₂(g) → H₂NCOONH₄(s) (অ্যামোনিয়াম কার্বামেট)</code></li> <li><strong>ইউরিয়া গঠন:</strong><br>অ্যামোনিয়াম কার্বামেট থেকে পানি অপসারণের মাধ্যমে ইউরিয়া উৎপন্ন হয়।<br><code>H₂NCOONH₄(s) → H₂NCONH₂(s) (ইউরিয়া) + H₂O(g)</code></li> </ol> <p>সুতরাং, অ্যামোনিয়ার সাথে কার্বন ডাই অক্সাইড (CO₂) বিক্রিয়া করে ইউরিয়া উৎপন্ন করে।</p> <ul> <li>(A) H₂O (পানি): এটি ইউরিয়া সংশ্লেষণের উপজাত।</li> <li>(C) CH₄ (মিথেন): এটি প্রাকৃতিক গ্যাসের প্রধান উপাদান, যা থেকে অ্যামোনিয়া তৈরির জন্য হাইড্রোজেন উৎপন্ন হয়, কিন্তু সরাসরি ইউরিয়া তৈরি করে না।</li> <li>(D) C₆H₆ (বেনজিন): এটি একটি জৈব যৌগ, যা ইউরিয়া উৎপাদনে ব্যবহৃত হয় না।</li> </ul> <p>সুতরাং, CO₂ অ্যামোনিয়ার সাথে বিক্রিয়া করে ইউরিয়া উৎপন্ন করে।</p>",
+        },
+        {
+          id: 8,
+          question: "নিচের কোন যৌগের পুনর্বিন্যাসের ফলে ইউরিয়া উৎপন্ন হয়?",
+          options: {
+            a: "NH₄C - OH",
+            b: "NH₄CNS",
+            c: "NH₂COONH₄",
+            d: "NH₄CNO",
+          },
+          correct: "d",
+          explanation:
+            "<p>১৮২৮ সালে জার্মান রসায়নবিদ ফ্রেডরিখ ভোলার (Friedrich Wöhler) অজৈব যৌগ থেকে জৈব যৌগ ইউরিয়া সংশ্লেষণ করেন। এটি রসায়নের ইতিহাসে একটি যুগান্তকারী ঘটনা ছিল।</p> <p>তিনি অ্যামোনিয়াম সায়ানেট (NH₄CNO) কে উত্তপ্ত করে ইউরিয়া (H₂NCONH₂) প্রস্তুত করেছিলেন। এই বিক্রিয়াটি 'ভোলার সংশ্লেষণ' (Wöhler synthesis) নামে পরিচিত এবং এটি একটি পুনর্বিন্যাস বিক্রিয়া (rearrangement reaction)।</p> <p>বিক্রিয়া: <code>NH₄CNO (s) → H₂NCONH₂ (s)</code></p> <ul> <li>(A) NH₄C - OH: এটি একটি অবাস্তব সংকেত।</li> <li>(B) NH₄CNS: অ্যামোনিয়াম থায়োসায়ানেট, এটি ইউরিয়া তৈরি করে না।</li> <li>(C) NH₂COONH₄: অ্যামোনিয়াম কার্বামেট, এটি ইউরিয়া শিল্প উৎপাদনে একটি অন্তর্বর্তী যৌগ, যা পরে পানি অপসারণ করে ইউরিয়াতে রূপান্তরিত হয়, সরাসরি পুনর্বিন্যাস নয়।</li> <li>(D) NH₄CNO: অ্যামোনিয়াম সায়ানেট, এটি তাপের প্রভাবে পুনর্বিন্যস্ত হয়ে ইউরিয়া উৎপন্ন করে।</li> </ul> <p>সুতরাং, অ্যামোনিয়াম সায়ানেট (NH₄CNO) এর পুনর্বিন্যাসের ফলে ইউরিয়া উৎপন্ন হয়।</p>",
+        },
+        {
+          id: 9,
+          question: "2NH₃ (g) + CO₂ (g) → X → Y; এখানে 'Y' কী?",
+          options: {
+            a: "অ্যামোনিয়াম কার্বামেট",
+            b: "কার্বামাইড",
+            c: "অ্যামোনিয়াম সায়ানেট",
+            d: "অ্যামোনিয়াম কার্বনেট",
+          },
+          correct: "b",
+          explanation:
+            "<p>ইউরিয়া (কার্বামাইড) উৎপাদনের শিল্প প্রক্রিয়াটি দুটি ধাপে ঘটে:</p> <ol> <li><strong>প্রথম ধাপ (X গঠন):</strong> অ্যামোনিয়া (NH₃) এবং কার্বন ডাই অক্সাইড (CO₂) উচ্চ চাপ ও তাপমাত্রায় বিক্রিয়া করে অ্যামোনিয়াম কার্বামেট (H₂NCOONH₄) উৎপন্ন করে।<br><code>2NH₃(g) + CO₂(g) → H₂NCOONH₄(s) (X = অ্যামোনিয়াম কার্বামেট)</code></li> <li><strong>দ্বিতীয় ধাপ (Y গঠন):</strong> অ্যামোনিয়াম কার্বামেট পরবর্তীতে তাপের প্রভাবে বিয়োজিত হয়ে ইউরিয়া (H₂NCONH₂) এবং পানি (H₂O) উৎপন্ন করে। ইউরিয়াকে রাসায়নিকভাবে কার্বামাইডও বলা হয়।<br><code>H₂NCOONH₄(s) → H₂NCONH₂(s) (Y = ইউরিয়া/কার্বামাইড) + H₂O(g)</code></li> </ol> <p>সুতরাং, বিক্রিয়াটির চূড়ান্ত উৎপাদ 'Y' হলো কার্বামাইড (ইউরিয়া)।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "তাপমাত্রা বৃদ্ধি করলে নিম্নে উল্লেখিত বিক্রিয়ায় অ্যামোনিয়াম উৎপাদন কীভাবে প্রভাবিত হবে? N₂ (g) + 3H₂ (g) = 2NH₃ (g); ∆H = -92 KJ/mol",
+          options: {
+            a: "Increase",
+            b: "Decrease",
+            c: "Remain same",
+            d: "None of these",
+          },
+          correct: "b",
+          explanation:
+            "<p>প্রদত্ত বিক্রিয়াটি হলো হেবার-বস প্রক্রিয়া (Haber-Bosch process) যা শিল্পক্ষেত্রে অ্যামোনিয়া (NH₃) উৎপাদনের জন্য ব্যবহৃত হয়:</p> <p><code>N₂(g) + 3H₂(g) ⇌ 2NH₃(g); ∆H = -92 KJ/mol</code></p> <p>এই বিক্রিয়াটি একটি সাম্যাবস্থা বিক্রিয়া এবং এটি তাপোৎপাদী (exothermic) বিক্রিয়া, কারণ ∆H (এনথালপির পরিবর্তন) এর মান ঋণাত্মক (-92 KJ/mol)।</p> <p>লে-চ্যাটেলিয়ার নীতি (Le Chatelier's Principle) অনুযায়ী, যখন একটি সাম্যাবস্থায় থাকা সিস্টেমে কোনো পরিবর্তন (যেমন তাপমাত্রা, চাপ বা ঘনত্বের পরিবর্তন) ঘটানো হয়, তখন সিস্টেমটি এমনভাবে প্রতিক্রিয়া করে যাতে সেই পরিবর্তনের প্রভাব হ্রাস পায় এবং নতুন সাম্যাবস্থা অর্জিত হয়।</p> <ul> <li>একটি তাপোৎপাদী বিক্রিয়ার ক্ষেত্রে, তাপমাত্রা বৃদ্ধি করলে সাম্যাবস্থা বিপরীত দিকে (বাম দিকে, অর্থাৎ উৎপাদ থেকে বিক্রিয়কের দিকে) সরে যাবে। এর কারণ হলো, তাপমাত্রা বৃদ্ধি করলে সিস্টেম তাপ শোষণ করে বাড়তি তাপের প্রভাব কমাতে চায়, যা বিপরীত বিক্রিয়াকে উৎসাহিত করে।</li> <li>এর ফলে, অ্যামোনিয়ার উৎপাদন কমে যাবে।</li> </ul> <p>সুতরাং, তাপমাত্রা বৃদ্ধি করলে অ্যামোনিয়া উৎপাদন (yield of ammonia) <strong>Decrease (হ্রাস)</strong> পাবে।</p>",
+        },
+        {
+          id: 11,
+          question:
+            "প্রতি টন দানাদার ইউরিয়া তৈরির সময় কি পরিমাণ NH₃ গ্যাস নির্গত হয়ে বায়ুর দূষণ ঘটায়?",
+          options: {
+            a: "0.1 - 0.5 kg",
+            b: "0.2 - 0.7 kg",
+            c: "0.1 - 0.2 kg",
+            d: "0.2 - 0.5 kg",
+          },
+          correct: "d",
+          explanation:
+            "<p>ইউরিয়া সার উৎপাদন প্রক্রিয়ায় অ্যামোনিয়া (NH₃) একটি প্রধান কাঁচামাল। এই প্রক্রিয়ায় কিছু পরিমাণ অ্যামোনিয়া গ্যাস বায়ুমণ্ডলে নির্গত হতে পারে, যা পরিবেশ দূষণের কারণ।</p> <p>আধুনিক ইউরিয়া সার কারখানাগুলোতে পরিবেশ দূষণ নিয়ন্ত্রণের জন্য বিভিন্ন ব্যবস্থা নেওয়া হয়। তবে, প্রক্রিয়াগত কারণে কিছু পরিমাণ NH₃ গ্যাস নির্গত হতে পারে।</p> <p>বিভিন্ন গবেষণাপত্র এবং শিল্প মান অনুযায়ী, প্রতি টন দানাদার ইউরিয়া তৈরির সময় সাধারণত প্রায় ০.২ - ০.৫ কেজি (kg) অ্যামোনিয়া গ্যাস বায়ুমণ্ডলে নির্গত হতে পারে। এই পরিমাণ কমাতে কঠোর পরিবেশগত প্রবিধান এবং প্রযুক্তির ব্যবহার করা হয়।</p>",
+        },
+        {
+          id: 12,
+          question: "নিচের কোনটি T.S.P এর সংকেত?",
+          options: {
+            a: "CaSO₄·2H₂O",
+            b: "Ca(H₂PO₄)₂",
+            c: "Ca₃(PO₄)₂",
+            d: "(NH₄)₂HPO₄",
+          },
+          correct: "b",
+          explanation:
+            "<p>T.S.P এর পূর্ণরূপ হলো Triple Superphosphate (ট্রিপল সুপারফসফেট)। এটি একটি ফসফরাস-সমৃদ্ধ সার, যা কৃষিতে ফসফরাসের উৎস হিসেবে ব্যবহৃত হয়।</p> <ul> <li>(A) CaSO₄·2H₂O: এটি জিপসাম (Gypsum) এর সংকেত, যা ক্যালসিয়াম সালফেট ডাইহাইড্রেট। এটি সার হিসেবে ব্যবহৃত হলেও T.S.P নয়।</li> <li>(B) Ca(H₂PO₄)₂: এটি মনো-ক্যালসিয়াম ফসফেট (Monocalcium Phosphate) এর সংকেত, যা ট্রিপল সুপারফসফেটের প্রধান সক্রিয় উপাদান। T.S.P মূলত ক্যালসিয়াম ফসফেটের সাথে ফসফরিক অ্যাসিডের বিক্রিয়ায় উৎপন্ন হয়।</li> <li>(C) Ca₃(PO₄)₂: এটি ট্রাইক্যালসিয়াম ফসফেট (Tricalcium Phosphate), যা রক ফসফেট (Rock Phosphate) এর প্রধান উপাদান। এটি পানিতে অদ্রবণীয় এবং উদ্ভিদের জন্য সহজে শোষণযোগ্য নয়।</li> <li>(D) (NH₄)₂HPO₄: এটি ডাই-অ্যামোনিয়াম ফসফেট (DAP) এর সংকেত, যা একটি নাইট্রোজেন ও ফসফরাস সমৃদ্ধ সার।</li> </ul> <p>সুতরাং, Ca(H₂PO₄)₂ হলো T.S.P এর সক্রিয় উপাদান এবং এর সংকেত।</p>",
+        },
+        {
+          id: 13,
+          question:
+            "পরীক্ষাগারে সর্বপ্রথম সংশ্লেষিত জৈব যৌগের (Organic compound) নাম কী?",
+          options: {
+            a: "ইথেন",
+            b: "ইউরিয়া",
+            c: "অ্যাসেটিক এসিড",
+            d: "অক্সালিক এসিড",
+          },
+          correct: "b",
+          explanation:
+            "<p>১৮২৮ সালে জার্মান রসায়নবিদ ফ্রেডরিখ ভোলার (Friedrich Wöhler) রসায়নের ইতিহাসে একটি যুগান্তকারী আবিষ্কার করেন। তিনি অজৈব যৌগ থেকে পরীক্ষাগারে প্রথম জৈব যৌগ সংশ্লেষণ করেন।</p> <ul> <li>তিনি অ্যামোনিয়াম সায়ানেট (NH₄CNO), যা একটি অজৈব যৌগ, কে উত্তপ্ত করে ইউরিয়া (H₂NCONH₂) তৈরি করেন।</li> <li>এই আবিষ্কার 'ভাইটাল ফোর্স থিওরি' বা 'প্রাণশক্তি মতবাদ'কে মিথ্যা প্রমাণ করে, যা বলেছিল যে জৈব যৌগ কেবল জীবন্ত প্রাণী বা উদ্ভিদ থেকে উৎপন্ন হতে পারে এবং পরীক্ষাগারে তৈরি করা সম্ভব নয়।</li> </ul> <p>সুতরাং, পরীক্ষাগারে সর্বপ্রথম সংশ্লেষিত জৈব যৌগের নাম হলো ইউরিয়া।</p>",
+        },
+        {
+          id: 14,
+          question: "উদ্ভিদ মূলের সাহায্যে ইউরিয়া সার কী অবস্থায় শোষণ করে?",
+          options: {
+            a: "H₂NCONH₂",
+            b: "NH₄OH",
+            c: "NO₃ salt",
+            d: "NO₂ salt",
+          },
+          correct: "c",
+          explanation:
+            "<p>ইউরিয়া (H₂NCONH₂) নিজে সরাসরি উদ্ভিদ দ্বারা শোষণযোগ্য নয়। ইউরিয়া মাটিতে প্রয়োগ করার পর কিছু প্রক্রিয়ার মধ্য দিয়ে যায় যা ইউরিয়াকে উদ্ভিদের শোষণযোগ্য রূপে রূপান্তরিত করে।</p> <p>প্রক্রিয়াটি নিম্নরূপ:</p> <ol> <li><strong>হাইড্রোলিসিস:</strong> ইউরিয়া এনজাইম ইউরিয়েসের (urease) প্রভাবে পানিতে বিয়োজিত হয়ে অ্যামোনিয়াম কার্বনেট উৎপন্ন করে।<br><code>H₂NCONH₂ + 2H₂O → (NH₄)₂CO₃</code></li> <li><strong>অ্যামোনিয়াম রূপ:</strong> অ্যামোনিয়াম কার্বনেট পরবর্তীতে অ্যামোনিয়াম আয়ন (NH₄⁺) এবং কার্বনেট আয়নে বিভক্ত হয়। উদ্ভিদ কিছু পরিমাণে অ্যামোনিয়াম আয়ন সরাসরি শোষণ করতে পারে, বিশেষ করে যখন মাটি কিছুটা অম্লীয় হয়।</li> <li><strong>নাইট্রিফিকেশন:</strong> মাটির ব্যাকটেরিয়া (নাইট্রিফাইং ব্যাকটেরিয়া) অ্যামোনিয়াম আয়নকে প্রথমে নাইট্রাইট (NO₂⁻) এবং তারপর নাইট্রেট (NO₃⁻) আয়নে রূপান্তরিত করে। এই প্রক্রিয়াকে নাইট্রিফিকেশন বলে।<br><code>NH₄⁺ → NO₂⁻ → NO₃⁻</code></li> </ol> <p>উদ্ভিদের মূল প্রধানত নাইট্রেট (NO₃⁻) আয়ন হিসেবে নাইট্রোজেন শোষণ করে। এটি নাইট্রোজেনের সবচেয়ে সহজলভ্য এবং পছন্দের রূপ যা উদ্ভিদ শোষণ করতে পারে। যদিও কিছু পরিমাণে অ্যামোনিয়াম আয়নও শোষিত হয়, তবে নাইট্রেটই প্রধান।</p> <p>সুতরাং, উদ্ভিদ মূলের সাহায্যে ইউরিয়া সার মূলত নাইট্রেট লবণ (NO₃ salt) অবস্থায় শোষণ করে।</p>",
+        },
+        {
+          id: 15,
+          question: "হেবার বস পদ্ধতিতে অ্যামোনিয়া প্রস্তুতিতে ব্যবহৃত হয়?",
+          options: {
+            a: "V₂O₅",
+            b: "Fe",
+            c: "Al₂O₃",
+            d: "Ni",
+          },
+          correct: "b",
+          explanation:
+            "<p>হেবার-বস পদ্ধতি (Haber-Bosch process) হলো শিল্পক্ষেত্রে অ্যামোনিয়া (NH₃) উৎপাদনের একটি অত্যন্ত গুরুত্বপূর্ণ প্রক্রিয়া। এই প্রক্রিয়ায় নাইট্রোজেন (N₂) এবং হাইড্রোজেন (H₂) গ্যাস উচ্চ চাপ এবং তাপমাত্রায় বিক্রিয়া করে অ্যামোনিয়া উৎপন্ন করে।</p> <p>বিক্রিয়া: <code>N₂(g) + 3H₂(g) ⇌ 2NH₃(g)</code></p> <p>এই বিক্রিয়াটি একটি সাম্যাবস্থা বিক্রিয়া এবং এর জন্য একটি উপযুক্ত প্রভাবক (catalyst) প্রয়োজন হয় যাতে বিক্রিয়াটি কার্যকরভাবে সম্পন্ন হয়।</p> <ul> <li>(A) V₂O₅ (ভ্যানাডিয়াম পেন্টোক্সাইড): এটি সালফিউরিক অ্যাসিড উৎপাদনে কন্টাক্ট প্রক্রিয়ায় ব্যবহৃত হয়।</li> <li>(B) Fe (আয়রন): হেবার-বস পদ্ধতিতে আয়রন (লোহা) হলো প্রধান প্রভাবক। সাধারণত, সূক্ষ্মভাবে বিভক্ত আয়রন পাউডার প্রভাবক হিসেবে ব্যবহৃত হয়। আয়রনের সাথে সামান্য পরিমাণে মলিবডেনাম (Mo) বা অ্যালুমিনিয়াম অক্সাইড (Al₂O₃) এবং পটাশিয়াম অক্সাইড (K₂O) এর মতো সহায়ক (promoter) ব্যবহার করা হয় যাতে প্রভাবকের কার্যকারিতা বৃদ্ধি পায়।</li> <li>(C) Al₂O₃ (অ্যালুমিনিয়াম অক্সাইড): এটি হেবার-বস প্রক্রিয়ায় প্রভাবক সহায়ক (catalyst promoter) হিসেবে ব্যবহৃত হয়, সরাসরি প্রধান প্রভাবক নয়।</li> <li>(D) Ni (নিকেল): এটি সাধারণত মিথেন স্টিম রিফর্মিং (যেমন হাইড্রোজেন উৎপাদনে) প্রক্রিয়ায় প্রভাবক হিসেবে ব্যবহৃত হয়, হেবার-বস পদ্ধতিতে নয়।</li> </ul> <p>সুতরাং, হেবার-বস পদ্ধতিতে অ্যামোনিয়া প্রস্তুতিতে প্রধানত আয়রন (Fe) ব্যবহৃত হয়।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                                                      <label class="option" data-option="${option}">
+                                                                        <div class="circle">${option}</div>
+                                                                        <span class="option-text">${question.options[option]}</span>
+                                                                      </label>
+                                                                    `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                         <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                         <div class="explanation-content">
+                                                                           <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                           ${question.explanation}
+                                                                         </div>
+                                                                       </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                    <p class="question-label">${
+                                                                      index + 1
+                                                                    }. ${
+            question.question
+          }</p>
+                                                                    <div class="options">
+                                                                      ${optionsHTML}
+                                                                    </div>
+                                                                    ${explanationHTML}
+                                                                  `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
